@@ -1,0 +1,149 @@
+/**
+ * @file Firebase Security Rules for AuraChat.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model, where users can only
+ * access their own data.  It uses Firebase Authentication UIDs to identify users
+ * and control access to their resources. Data access is primarily controlled
+ * through path-based rules and data denormalization.
+ *
+ * Data Structure:
+ * - `/users/{userId}`: Stores user profile information.  The `userId` must
+ *   match the Firebase Authentication UID.
+ * - `/users/{userId}/chatConversations/{chatConversationId}`: Stores chat
+ *   conversations for a specific user. The `userId` in the path must match the
+ *   `userId` field within the document.
+ * - `/users/{userId}/chatConversations/{chatConversationId}/chatMessages/{chatMessageId}`:
+ *   Stores chat messages within a conversation.  Access is controlled by the
+ *   `userId` in the parent `chatConversation` document.
+ * - `/backendConfigurations/{backendConfigurationId}`: Stores backend configurations for each user
+ *   The `backendConfigurationId` must match the Firebase Authentication UID
+ *
+ * Key Security Decisions:
+ * - Users can only create, read, update, and delete their own user documents.
+ * - Users can only create, read, update, and delete chat conversations and
+ *   messages within their own user space.
+ * - Listing of user documents is disabled.
+ * - Backend configurations are only accessible by the user to whom the configuration belongs.
+ *
+ * Denormalization for Authorization:
+ * - Chat conversations include a `userId` field to simplify authorization
+ *   checks in subcollections.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Enforces user-ownership for user profile data.
+     * @path /users/{userId}
+     * @allow (create) User with matching auth UID can create their profile.
+     * @allow (get, update, delete) User with matching auth UID can read, update, and delete their profile.
+     * @deny (create, get, update, delete) User with non-matching auth UID cannot access this data.
+     * @principle Enforces document ownership for all operations.  Requires `userId` to match `request.auth.uid`.
+     */
+    match /users/{userId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == request.auth.uid;
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Enforces user-ownership for chat conversations.
+     * @path /users/{userId}/chatConversations/{chatConversationId}
+     * @allow (create) User with matching auth UID can create conversations in their own user space.
+     * @allow (get, list, update, delete) User with matching auth UID can access conversations in their own user space.
+     * @deny (create, get, list, update, delete) User with non-matching auth UID cannot access this data.
+     * @principle Enforces document ownership for all operations.  Requires `userId` to match `request.auth.uid`.
+     */
+    match /users/{userId}/chatConversations/{chatConversationId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Enforces user-ownership for chat messages.
+     * @path /users/{userId}/chatConversations/{chatConversationId}/chatMessages/{chatMessageId}
+     * @allow (create) User with matching auth UID can create messages in their own conversations.
+     * @allow (get, list, update, delete) User with matching auth UID can access messages in their own conversations.
+     * @deny (create, get, list, update, delete) User with non-matching auth UID cannot access this data.
+     * @principle Enforces document ownership for all operations.  Ownership is inherited from the parent `chatConversation` document.
+     */
+    match /users/{userId}/chatConversations/{chatConversationId}/chatMessages/{chatMessageId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow create: if isSignedIn() && isOwner(userId);
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Enforces user-ownership for backend configurations.
+     * @path /backendConfigurations/{backendConfigurationId}
+     * @allow (create) User with matching auth UID can create their own backend configuration.
+     * @allow (get, update, delete) User with matching auth UID can read, update, and delete their own backend configuration.
+     * @deny (create, get, update, delete) User with non-matching auth UID cannot access this data.
+     * @principle Enforces document ownership for all operations. Requires `backendConfigurationId` to match `request.auth.uid`.
+     */
+    match /backendConfigurations/{backendConfigurationId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(backendConfigurationId) {
+        return request.auth.uid == backendConfigurationId;
+      }
+
+      function isExistingOwner(backendConfigurationId) {
+        return isOwner(backendConfigurationId) && resource != null;
+      }
+
+      allow create: if isSignedIn() && isOwner(backendConfigurationId) && request.resource.data.userId == request.auth.uid;
+      allow get: if isOwner(backendConfigurationId);
+      allow list: if false;
+      allow update: if isExistingOwner(backendConfigurationId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(backendConfigurationId);
+    }
+  }
+}

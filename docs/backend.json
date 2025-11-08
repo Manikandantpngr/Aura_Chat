@@ -1,0 +1,245 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the AuraChat application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "firebaseUid": {
+          "type": "string",
+          "description": "The Firebase Authentication User ID."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User's display name."
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "URL of the user's profile photo, if available.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "firebaseUid",
+        "email"
+      ]
+    },
+    "ChatConversation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ChatConversation",
+      "type": "object",
+      "description": "Represents a chat conversation between the user and the LLM.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ChatConversation entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N ChatConversation)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the conversation."
+        },
+        "startTime": {
+          "type": "string",
+          "description": "Timestamp indicating when the conversation started.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "Timestamp indicating when the conversation ended. Could be null if the conversation is still ongoing.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "startTime"
+      ]
+    },
+    "ChatMessage": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ChatMessage",
+      "type": "object",
+      "description": "Represents a single message within a chat conversation.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ChatMessage entity."
+        },
+        "conversationId": {
+          "type": "string",
+          "description": "Reference to ChatConversation. (Relationship: ChatConversation 1:N ChatMessage)"
+        },
+        "sender": {
+          "type": "string",
+          "description": "Indicates who sent the message (e.g., 'user' or 'assistant')."
+        },
+        "content": {
+          "type": "string",
+          "description": "The text content of the message."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp indicating when the message was sent.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "conversationId",
+        "sender",
+        "content",
+        "timestamp"
+      ]
+    },
+    "BackendConfiguration": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "BackendConfiguration",
+      "type": "object",
+      "description": "Represents the user-configurable backend settings.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the BackendConfiguration entity.  Could be same as userId"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:1 BackendConfiguration)"
+        },
+        "backendUrl": {
+          "type": "string",
+          "description": "URL of the backend server.",
+          "format": "uri"
+        },
+        "modelName": {
+          "type": "string",
+          "description": "Name of the LLM model being used."
+        },
+        "temperature": {
+          "type": "number",
+          "description": "The sampling temperature for the LLM."
+        },
+        "topP": {
+          "type": "number",
+          "description": "The top_p sampling parameter for the LLM."
+        },
+        "contextLength": {
+          "type": "number",
+          "description": "The context length for the LLM."
+        },
+        "gpuLayers": {
+          "type": "number",
+          "description": "Number of GPU layers to offload for the LLM."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "backendUrl",
+        "modelName"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile data.  The `userId` parameter corresponds to the Firebase Authentication UID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Authentication User ID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/chatConversations/{chatConversationId}",
+        "definition": {
+          "entityName": "ChatConversation",
+          "schema": {
+            "$ref": "#/backend/entities/ChatConversation"
+          },
+          "description": "Stores chat conversations associated with a specific user. Includes denormalized 'userId' field for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Authentication User ID of the conversation owner."
+            },
+            {
+              "name": "chatConversationId",
+              "description": "Unique identifier for the chat conversation."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/chatConversations/{chatConversationId}/chatMessages/{chatMessageId}",
+        "definition": {
+          "entityName": "ChatMessage",
+          "schema": {
+            "$ref": "#/backend/entities/ChatMessage"
+          },
+          "description": "Stores chat messages within a specific chat conversation.  Authorization is derived from the parent `chatConversation` document's `userId` field.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Authentication User ID of the conversation owner."
+            },
+            {
+              "name": "chatConversationId",
+              "description": "Unique identifier for the chat conversation."
+            },
+            {
+              "name": "chatMessageId",
+              "description": "Unique identifier for the chat message."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/backendConfigurations/{backendConfigurationId}",
+        "definition": {
+          "entityName": "BackendConfiguration",
+          "schema": {
+            "$ref": "#/backend/entities/BackendConfiguration"
+          },
+          "description": "Stores backend configuration settings for each user.  The `backendConfigurationId` should be the same as the `userId` for easy retrieval.",
+          "params": [
+            {
+              "name": "backendConfigurationId",
+              "description": "The Firebase Authentication User ID of the user.  This ID is shared with the document ID."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure Authorization Independence, support the required QAPs (Rules Are Not Filters), and maintain data integrity. It follows the principle of denormalization for authorization, structural segregation for homogeneous security posture, and consistent access modeling.\n\n**Authorization Independence:** User roles and access control lists are denormalized into the documents where they are required. This eliminates the need for `get()` calls in security rules, which are known to break atomic operations and are hard to debug. For example, access to `chatConversations` and `chatMessages` is governed by the `userId` field present in the `chatConversations` document.\n\n**QAPs (Rules are not Filters):** The structure facilitates secure `list` operations.  Path-based ownership for user data (`/users/{userId}/...`) allows listing only the data owned by a specific user. Collaborative access, if needed in the future, can be implemented by adding a `members` map to the relevant documents, again avoiding rule-based filtering.\n\n**Data Clarity and Predictability:** The database schema enforces naming conventions, explicit state modeling (if applicable in future iterations), and avoidance of dynamic keys to promote readability and maintainability. The Firebase Authentication `uid` is used as the primary means of identifying users and controlling access to their resources."
+  }
+}

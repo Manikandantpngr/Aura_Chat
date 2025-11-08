@@ -1,0 +1,153 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 10% 3.9%; /* Deep, neutral dark gray */
+    --foreground: 0 0% 98%;
+
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 349 97% 61%; /* #FF0436 */
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 3.7% 15.9%; /* For assistant messages */
+    --muted-foreground: 240 5% 64.9%;
+
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 349 97% 61%;
+
+    --radius: 1rem;
+
+    /* Frosted glass/material look */
+    --sidebar-background: 240 10% 10% / 0.5; /* Semi-transparent dark */
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 100% / 0.1;
+    --sidebar-accent: 0 0% 100% / 0.05;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: var(--primary-foreground);
+    --sidebar-ring: var(--ring);
+
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 349 75% 55%;
+  }
+
+  .dark {
+    /* Keeping dark variables consistent with root for a default dark theme */
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 349 97% 61%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 349 97% 61%;
+    --radius: 1rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html, body {
+    @apply bg-background text-foreground;
+    background-image:
+      radial-gradient(at 27% 37%, hsla(var(--primary),0.2) 0px, transparent 50%),
+      radial-gradient(at 97% 21%, hsla(38, 90%, 60%, 0.15) 0px, transparent 50%),
+      radial-gradient(at 52% 99%, hsla(355, 90%, 60%, 0.2) 0px, transparent 50%),
+      radial-gradient(at 10% 29%, hsla(210, 90%, 60%, 0.15) 0px, transparent 50%),
+      radial-gradient(at 97% 96%, hsla(38, 90%, 60%, 0.1) 0px, transparent 50%),
+      radial-gradient(at 33% 50%, hsla(210, 90%, 60%, 0.1) 0px, transparent 50%),
+      radial-gradient(at 79% 53%, hsla(343, 90%, 60%, 0.2) 0px, transparent 50%);
+  }
+
+  .aurora-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    opacity: 0.5;
+    transition: opacity 0.5s;
+  }
+
+  .aurora-outer, .aurora-inner {
+    position: absolute;
+    border-radius: 50%;
+    mix-blend-mode: plus-lighter;
+    -webkit-filter: blur(80px);
+    filter: blur(80px);
+    will-change: transform;
+  }
+
+  .aurora-outer {
+    background-image: radial-gradient(hsl(var(--primary)), transparent 60%);
+    width: 800px;
+    height: 800px;
+  }
+
+  .aurora-inner {
+    background-image: radial-gradient(hsl(38, 100%, 50%), transparent 60%);
+    width: 600px;
+    height: 600px;
+  }
+}
+
+@layer utilities {
+  .blinking-cursor {
+    animation: blink 1s step-end infinite;
+  }
+}
+
+
+@keyframes blink {
+  from, to {
+    color: transparent;
+  }
+  50% {
+    color: inherit;
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
